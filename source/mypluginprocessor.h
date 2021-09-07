@@ -54,6 +54,7 @@ protected:
 	Steinberg::Vst::ParamValue _coef_neg;	// 0.1f ... 2.0f
 	Steinberg::Vst::ParamValue _num_stages;	// 1 ... 10
 	Steinberg::int32 _invert_stages; // 0 ... 1
+	Steinberg::Vst::ParamValue _gain;	// 0.0f ... 1.0f
 	Steinberg::int32 _bypass;
 };
 

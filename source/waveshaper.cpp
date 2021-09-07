@@ -44,6 +44,7 @@ void waveshaper(float* in, float* out, int buf_len, const params p) {
 			const uint32_t inverted = *(uint32_t*)&sample ^ (0x80000000 & ~((p.invert_stages & j) - 0x01));
 			sample = *(float*)&inverted;
 		}
+		sample *= p.gain;
 		out[i] = sample;
 	}
 }
@@ -58,6 +59,7 @@ void waveshaper_simd(float* in, float* out, int buf_len, const params p) {
 	const __m128 one = _mm_set1_ps(1.0f);
 	const __m128 a = _mm_set1_ps(0.2447f);
 	const __m128 b = _mm_set1_ps(0.0663f);
+	const __m128 gain = _mm_set1_ps(p.gain);
 
 	// process
 	for (int i = 0; i < buf_len_simd; i += 4) {
@@ -78,6 +80,7 @@ void waveshaper_simd(float* in, float* out, int buf_len, const params p) {
 			const __m128i inv = _mm_set1_epi32(invert);
 			sample = _mm_xor_ps(sample, *(__m128*) & inv);
 		}
+		sample = _mm_mul_ps(sample, gain);
 		_mm_store_ps(&out[i], sample);
 	}
 
@@ -91,6 +94,7 @@ void waveshaper_simd(float* in, float* out, int buf_len, const params p) {
 			const uint32_t inverted = *(uint32_t*)&sample ^ (0x80000000 & ~((p.invert_stages & j) - 0x01));
 			sample = *(float*)&inverted;
 		}
+		sample *= p.gain;
 		out[i] = sample;
 	}
 }

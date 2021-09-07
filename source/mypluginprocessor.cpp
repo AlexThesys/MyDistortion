@@ -26,10 +26,11 @@ inline T scale_range(T newRangeMax, T newRangeMin, T originalValue) noexcept {
 //------------------------------------------------------------------------
 // MyDistortionProcessor
 //------------------------------------------------------------------------
-MyDistortionProcessor::MyDistortionProcessor () :	_coef_pos(DistConst::COEF_POS_DEFAULT), 
-													_coef_neg(DistConst::COEF_NEG_DEFAULT),
+MyDistortionProcessor::MyDistortionProcessor () :	_coef_pos(DistConst::COEF_DEFAULT), 
+													_coef_neg(DistConst::COEF_DEFAULT),
 													_num_stages(DistConst::NUM_STAGES_DEFAULT),
 													_invert_stages(1),
+													_gain(DistConst::GAIN_DEFAULT),
 													_bypass(0)
 {
 	//--- set the wanted controller for our processor
@@ -102,12 +103,12 @@ tresult PLUGIN_API MyDistortionProcessor::process (Vst::ProcessData& data)
 				case MyDistParams::kParamCoefPosID:
 					if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 						kResultTrue)
-						_coef_pos = scale_range<Steinberg::Vst::ParamValue>(DistConst::COEF_POS_MAX, DistConst::COEF_POS_MIN, value);
+						_coef_pos = scale_range<Steinberg::Vst::ParamValue>(DistConst::COEF_MAX, DistConst::COEF_MIN, value);
 					break;
 				case MyDistParams::kParamCoefNegID:
 					if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 						kResultTrue)
-						_coef_neg = scale_range<Steinberg::Vst::ParamValue>(DistConst::COEF_NEG_MAX, DistConst::COEF_NEG_MIN, value);
+						_coef_neg = scale_range<Steinberg::Vst::ParamValue>(DistConst::COEF_MAX, DistConst::COEF_MIN, value);
 					break;
 				case MyDistParams::kParamNumStagesID:
 					if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
@@ -118,6 +119,11 @@ tresult PLUGIN_API MyDistortionProcessor::process (Vst::ProcessData& data)
 					if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 						kResultTrue)
 						_invert_stages = value > 0.5f;
+					break;
+				case MyDistParams::kParamGainID:
+					if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
+						kResultTrue)
+						_gain = value;
 					break;
 				case MyDistParams::kBypassID:
 					if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
@@ -151,7 +157,7 @@ tresult PLUGIN_API MyDistortionProcessor::process (Vst::ProcessData& data)
 		} else {
 			// Process Algorithm
 			for (int32 channel = 0; channel < numChannels; channel++) {
-				params p = { (float)_coef_pos, (float)_coef_neg, (int32_t)_num_stages, _invert_stages };
+				params p = { (float)_coef_pos, (float)_coef_neg, (int32_t)_num_stages, (int32_t)_invert_stages, (float)_gain };
 				waveshaper_simd((float*)data.inputs[0].channelBuffers32[channel], (float*)data.outputs[0].channelBuffers32[channel], data.numSamples, p);
 			}
 		}
@@ -204,6 +210,10 @@ tresult PLUGIN_API MyDistortionProcessor::setState (IBStream* state)
 	if (streamer.readInt32(_invert_stages) == false)
 		return kResultFalse;
 
+	if (streamer.readFloat(res) == false)
+		return kResultFalse;
+	_gain = res;
+
 	if (streamer.readInt32(_bypass) == false)
 		return kResultFalse;
 
@@ -218,6 +228,7 @@ tresult PLUGIN_API MyDistortionProcessor::getState (IBStream* state)
 	streamer.writeFloat((float)_coef_neg);
 	streamer.writeFloat((float)_num_stages);
 	streamer.writeInt32(_invert_stages);
+	streamer.writeFloat((float)_gain);
 	streamer.writeInt32(_bypass);
 
 	return kResultOk;

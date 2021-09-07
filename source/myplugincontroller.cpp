@@ -31,17 +31,17 @@ tresult PLUGIN_API MyDistortionController::initialize (FUnknown* context)
 
 	//-----------------------------------
 	param = new Vst::RangeParameter(STR16("Coef Positive"), MyDistParams::kParamCoefPosID,
-									STR16(""), DistConst::COEF_POS_MIN,
-									DistConst::COEF_POS_MAX,
-									DistConst::COEF_POS_DEFAULT);
+									STR16(""), DistConst::COEF_MIN,
+									DistConst::COEF_MAX,
+									DistConst::COEF_DEFAULT);
 
 	param->setPrecision(1);
 	parameters.addParameter(param);
 	//-----------------------------------
 	param = new Vst::RangeParameter(STR16("Coef Negative"), MyDistParams::kParamCoefNegID,
-									STR16(""), DistConst::COEF_NEG_MIN,
-									DistConst::COEF_NEG_MAX,
-									DistConst::COEF_NEG_DEFAULT);
+									STR16(""), DistConst::COEF_MIN,
+									DistConst::COEF_MAX,
+									DistConst::COEF_DEFAULT);
 
 	param->setPrecision(1);
 	parameters.addParameter(param);
@@ -60,6 +60,14 @@ tresult PLUGIN_API MyDistortionController::initialize (FUnknown* context)
 	strParam = static_cast<Vst::StringListParameter*>(param);
 	strParam->appendString(STR16("Off"));	// 0
 	strParam->appendString(STR16("On"));  // 1
+	parameters.addParameter(param);
+	//-----------------------------------
+	param = new Vst::RangeParameter(STR16("Gain"), MyDistParams::kParamGainID,
+									STR16(""), DistConst::GAIN_MIN,
+									DistConst::GAIN_MAX,
+									DistConst::GAIN_DEFAULT);
+
+	param->setPrecision(1);
 	parameters.addParameter(param);
 	//---------------------------------
 	parameters.addParameter(STR16("Bypass"), nullptr, 1, 0,
@@ -110,11 +118,14 @@ tresult PLUGIN_API MyDistortionController::setComponentState (IBStream* state)
 		return kResultFalse;
 	setParamNormalized(MyDistParams::kParamInvertStagesID, savedParam2 ? 1 : 0);
 
-	// read the bypass
-	int8 bypassState;
-	if (streamer.readInt8(bypassState) == false)
+	if (streamer.readFloat(savedParam1) == false)
 		return kResultFalse;
-	setParamNormalized(MyDistParams::kBypassID, bypassState ? 1 : 0);
+	setParamNormalized(MyDistParams::kParamGainID, savedParam1);
+
+	// read the bypass
+	if (streamer.readInt32(savedParam2) == false)
+		return kResultFalse;
+	setParamNormalized(MyDistParams::kBypassID, savedParam2 ? 1 : 0);
 
 	return kResultOk;
 }
