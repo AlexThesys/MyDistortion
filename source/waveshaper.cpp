@@ -38,9 +38,10 @@ void waveshaper(float* in, float* out, int buf_len, const params p) {
 	for (int i = 0; i < buf_len; i++) {
 		float sample = in[i];
 		for (int j = 0; j < p.num_stages; j++) {
-			const int32_t mask = (int32_t)sample >> 0x1f;
-			const float coeff = (~mask & (uint32_t)p.coef_pos) | (mask & (uint32_t)p.coef_neg);
-			sample = (1.0f / fast_atan(coeff)) * fast_atan(coeff * sample);
+			const int32_t mask = *(int32_t*)&sample >> 0x1f;
+			fp32_to_u32 coeff;
+			coeff.u = (~mask & *(uint32_t*)&p.coef_pos) | (mask & *(uint32_t*)&p.coef_neg);
+			sample = (1.0f / fast_atan(coeff.f)) * fast_atan(coeff.f * sample);
 			const uint32_t inverted = *(uint32_t*)&sample ^ (0x80000000 & ~((p.invert_stages & j) - 0x01));
 			sample = *(float*)&inverted;
 		}
@@ -88,9 +89,10 @@ void waveshaper_simd(float* in, float* out, int buf_len, const params p) {
 	for (int i = buf_len_simd; i < buf_len; i++) {
 		float sample = in[i];
 		for (int j = 0; j < p.num_stages; j++) {
-			const int32_t mask = (int32_t)sample >> 0x1f;
-			const float coeff = (~mask & (uint32_t)p.coef_pos) | (mask & (uint32_t)p.coef_neg);
-			sample = (1.0f / fast_atan(coeff)) * fast_atan(coeff * sample);
+			const int32_t mask = *(int32_t*)&sample >> 0x1f;
+			fp32_to_u32 coeff;
+			coeff.u = (~mask & *(uint32_t*)&p.coef_pos) | (mask & *(uint32_t*)&p.coef_neg);
+			sample = (1.0f / fast_atan(coeff.f)) * fast_atan(coeff.f * sample);
 			const uint32_t inverted = *(uint32_t*)&sample ^ (0x80000000 & ~((p.invert_stages & j) - 0x01));
 			sample = *(float*)&inverted;
 		}
